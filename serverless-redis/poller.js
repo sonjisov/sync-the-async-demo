@@ -99,6 +99,8 @@ const setRedisStatus = (correlationId, operation, valueObject, callback) => {
     });
 };
 
-module.exports.pollValue = pollValue;
-module.exports.configure = configure;
-module.exports.setValue = setValue;
+module.exports = {
+    pollValue,
+    configure,
+    setValue,
+};
