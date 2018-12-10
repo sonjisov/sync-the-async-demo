@@ -14,13 +14,13 @@ const configure = (host = 'localhost', port = '6379', retries = 24, timeout = 12
 /**
  * Polls the status of an operation with certain ID
  * Cache acts like a map with the following structure:
- * cache[corellationId][operation] = valueObject
+ * cache[correlationId][operation] = valueObject
  * 
  * @param {string} key A key with which the operation is associated.
  * @param {string} evaluate A function that tests the valueObject to check if the operation has finished yet.
  */
 const pollValue = (correlationId, operation, evaluate) => {
-    const key = `${corellationId}|${operation}`;
+    const key = `${correlationId}|${operation}`;
     if (key === null || key == undefined) {
         throw "redis-poll: key is undefined";
     }
@@ -57,16 +57,16 @@ const poll = (key, evaluate, callback, attemptsLeft = 0) => {
 
 /**
  * Cache acts like a map with the following structure:
- * cache[corellationId][operation] = valueObject
+ * cache[correlationId][operation] = valueObject
  * 
- * @param {string} corellationId The corellation id of the caller. The key of the cached value.
+ * @param {string} correlationId The correlation id of the caller. The key of the cached value.
  * @param {string} operation  The operation request. The second level key of the cached value.
- * @param {object} valueObject The cached value associated with the the corellation id and the operation.
+ * @param {object} valueObject The cached value associated with the the correlation id and the operation.
  */
-const setValue = (corellationId, operation, valueObject)  => {
+const setValue = (correlationId, operation, valueObject)  => {
     return new Promise((resolve, reject) => {
         try{
-            setRedisStatus(corellationId, operation, valueObject, resolve);
+            setRedisStatus(correlationId, operation, valueObject, resolve);
         }
         catch(e){
             reject(e);
@@ -74,13 +74,13 @@ const setValue = (corellationId, operation, valueObject)  => {
     });
 };
 
-const setRedisStatus = (corellationId, operation, valueObject, callback) => {
+const setRedisStatus = (correlationId, operation, valueObject, callback) => {
     var client = redis.createClient({
         host: this.__host,
         port: this.__port,
     });
-    const id = `${corellationId}|${operation}`;
-    client.get(id, (e, result) => {
+    const key = `${correlationId}|${operation}`;
+    client.get(key, (e, result) => {
         let object = null;
         if(e) { throw e; client.quit(); }
         else if (result === null){
@@ -91,7 +91,7 @@ const setRedisStatus = (corellationId, operation, valueObject, callback) => {
             object = JSON.parse(result);
             object[operation] = valueObject;
         }
-        client.set(id, JSON.stringify(object), (error, reply) => {
+        client.set(key, JSON.stringify(object), (error, reply) => {
             callback({object, error, reply});
 
         });

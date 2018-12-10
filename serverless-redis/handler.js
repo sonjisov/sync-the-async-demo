@@ -8,7 +8,7 @@ const sns = new AWS.SNS();
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
-elasticachePoller.configure(process.env.REDIS_CLUSTER_URI, process.env.REDIS_CLUSTER_PORT, 64, 32);
+elasticachePoller.configure(process.env.REDIS_CLUSTER_URI, process.env.REDIS_CLUSTER_PORT, 128, 32);
 
 // const checkReviewStatus = eventStatus => (console.log(JSON.stringify({ eventStatus })), eventStatus && eventStatus.review_saved && (eventStatus.review_saved.status === 'ok' || eventStatus.review_saved.status === 'error'));
 
