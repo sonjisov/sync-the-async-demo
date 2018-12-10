@@ -1,0 +1,36 @@
+Description:
+  Elastic cache 
+
+Resources:
+
+  CacheSubnetGroup:
+    Type: "AWS::ElastiCache::SubnetGroup"
+    Properties:
+      CacheSubnetGroupName: CosmoReviewCacheSubnetGroup
+      Description: CosmoReview redis cluster subnet group
+      SubnetIds: !Split [",", !ImportValue CosmoReviewPrivateSubnets]
+
+  CacheCluster:
+    Type: "AWS::ElastiCache::CacheCluster"
+    DependsOn: CacheSubnetGroup
+    Properties:
+      ClusterName: CosmoReviewCache
+      CacheNodeType: "cache.t2.micro"
+      Engine: redis
+      NumCacheNodes: 1
+      CacheSubnetGroupName: !Ref CacheSubnetGroup
+      VpcSecurityGroupIds:
+        - Fn::ImportValue: CosmoReviewDefaultSecuirtyGroup
+
+Outputs:
+  CacheClusterAddress:
+    Description: Redis cache cluster address
+    Value: !GetAtt CacheCluster.RedisEndpoint.Address
+    Export:
+      Name: CosmoReviewCacheClusterAddress       
+
+  CacheClusterPort:
+    Description: Redis cache cluster port
+    Value: !GetAtt CacheCluster.RedisEndpoint.Port
+    Export:
+      Name: CosmoReviewCacheClusterPort       

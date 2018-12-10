@@ -1,0 +1,103 @@
+service: cosmo-review
+
+custom:
+  reviewTopicArn:
+      Fn::ImportValue: ReviewPostedTopicArn
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:DescribeTable
+        - dynamodb:GetItem
+        - dynamodb:PutItem      
+        - dynamodb:UpdateItem      
+        - dynamodb:CreateBackup
+        - dynamodb:RestoreTableFromBackup
+      Resource:
+        Fn::GetAtt:
+          - ReviewTable
+          - Arn
+    - Effect: "Allow"
+      Action:
+        - sns:Publish
+      Resource: ${self:custom.reviewTopicArn}
+
+  environment:
+    REDIS_CLUSTER_URI: 
+      Fn::ImportValue: CosmoReviewCacheClusterAddress
+    REDIS_CLUSTER_PORT: 
+      Fn::ImportValue: CosmoReviewCacheClusterPort
+    REVIEW_SNS_TOPIC_ARN: 
+      Fn::ImportValue: ReviewPostedTopicArn
+    REVIEW_TABLE: Review-${opt:stage, 'dev'}
+
+functions:
+  addReview:
+    handler: handler.addReview
+    events:
+      - http:
+          path: review
+          method: post
+    vpc:
+      securityGroupIds:
+        - Fn::ImportValue: CosmoReviewDefaultSecuirtyGroup
+      subnetIds:
+        Fn::Split: [",", Fn::ImportValue: CosmoReviewPrivateSubnets]
+  saveReview:
+    handler: handler.saveReview
+    events:
+      - sns:
+          arn: ${self:custom.reviewTopicArn}
+          topicName: ReviewPostedTopicArn
+    vpc:
+      securityGroupIds:
+        - Fn::ImportValue: CosmoReviewDefaultSecuirtyGroup
+      subnetIds:
+        Fn::Split: [",", Fn::ImportValue: CosmoReviewPrivateSubnets]
+  sendThankYouEmail:
+    handler: handler.sendThankYouEmail
+    events:
+      - sns:
+          arn: ${self:custom.reviewTopicArn}
+          topicName: ReviewPostedTopicArn
+    vpc:
+      securityGroupIds:
+        - Fn::ImportValue: CosmoReviewDefaultSecuirtyGroup
+      subnetIds:
+        Fn::Split: [",", Fn::ImportValue: CosmoReviewPrivateSubnets]
+  updateUserProfile:
+    handler: handler.updateUserProfile
+    events:
+      - sns:
+          arn: ${self:custom.reviewTopicArn}
+          topicName: ReviewPostedTopicArn
+    vpc:
+      securityGroupIds:
+        - Fn::ImportValue: CosmoReviewDefaultSecuirtyGroup
+      subnetIds:
+        Fn::Split: [",", Fn::ImportValue: CosmoReviewPrivateSubnets]
+
+resources:
+  Resources:
+    ReviewTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Review-${opt:stage, 'dev'}
+        AttributeDefinitions:
+          - AttributeName: author
+            AttributeType: S
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: author
+            KeyType: HASH
+          - AttributeName: id
+            KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1

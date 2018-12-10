@@ -1,0 +1,19 @@
+Description: "This template is used to create an sns topics."
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  ApplicationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: ReviewPosted
+
+Outputs:
+  ApplicationTopicName:
+    Description: ReviewPostedTopicName
+    Value: !GetAtt ApplicationTopic.TopicName
+    Export:
+      Name: ReviewPostedTopicName
+  ApplicationTopicArn:
+    Description: ReviewPostedTopicArn
+    Value: !Ref ApplicationTopic
+    Export:
+      Name: ReviewPostedTopicArn
